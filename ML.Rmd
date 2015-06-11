@@ -1,0 +1,51 @@
+---
+title: "Practical Machine Learning"
+author: "lywen"
+date: "2015年6月10日"
+output: html_document
+---
+###  using KNN Modeling, and got the KNN model sample error is 10%.   
+### loading the data
+```{r}
+##setwd('~/desktop/ML')
+testsets <- read.csv("pml-testing.csv")
+testsets=testsets[,-1]
+trainsets <- read.csv("pml-training.csv")
+trainsets=trainsets[,-1]
+
+```
+Delete the factor or the string variables from test and train datasets;then eliminate the variables from the new train dataset over half  of length variable is NA.
+```{r}
+variables=which(sapply(trainsets,class)%in%c('integer','numeric')&sapply(trainsets,function(data)ifelse(sum(!is.na(data))>length(data)/2,TRUE,FALSE)))
+newtrain=trainsets[,variables]
+newtrain=sapply(newtrain,
+                function(data)
+                  (data-min(data,na.rm=T))/(max(data,na.rm=T)-min(data,na.rm=T)))
+```
+### dividing the newtrain dataset 60% for training,40% testing.
+
+```{r}
+index=sample(dim(newtrain)[1],size=0.6*dim(newtrain)[1],replace=F)
+training=newtrain[index,]
+testing=newtrain[-index,]
+```
+###  Build KNN model with  training datsets
+```{r}
+library(class)
+predicted=knn(training,testing,trainsets$classe[index],k=10)
+real.train=trainsets$classe[-index]
+```
+### Calculate the errors of the Cross Validation Set.
+```{r}
+SampleError=1-sum(predicted==real.train)/length(predicted)
+```
+###  So the Out of Sample Error is: `r SampleError`  
+###  Predict testing data   
+```{r}
+newtset=sapply(testsets[,variables],
+                function(data)
+                  (data-min(data,na.rm=T))/(max(data,na.rm=T)-min(data,na.rm=T)))
+results <- knn(newtrain,newtset,trainsets$classe,k=10)
+results
+```
+
